@@ -42,7 +42,8 @@ cp .env.example .env        # then fill in your API keys
 playwright install chromium
 ```
 
-Edit `config/config.yaml` to add YouTube channel IDs, subreddits, and news sites.
+Edit `config/config.yaml` to set YouTube channels (by ID, `@handle`, or URL), subreddits,
+and news sites. A starter set of Tunisian channels is pre-filled — verify and extend it.
 
 ## Usage
 

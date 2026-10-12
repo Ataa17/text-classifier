@@ -12,9 +12,16 @@ scraping:
   request_sleep_seconds: 0.5     # be polite; rate-limit all requests
 
   youtube:
-    # Add Tunisian channel IDs (football / news / music / comedy).
-    # Channel IDs start with "UC...". Find via a channel's page source or the API.
-    channel_ids: []
+    # Each entry may be a channel ID (UC...), an @handle, or a full channel URL.
+    # Handles resolve via the API at runtime, so a wrong one is just skipped (no bad data).
+    # STARTER SET (football / news / music / comedy) — verify on youtube.com and add
+    # your own Derja-heavy channels; the trackers these came from disagree on handles.
+    channels:
+      - "@ettounsiareplay"       # Elhiwar Ettounsi (news / talk shows)
+      - "@nessmatv"              # Nessma TV (news / entertainment)
+      - "@Flayou"                # comedy sketches
+      - "@AhmedManai"            # football parodies / animation
+      - "@KoulTime"              # food reviews / vlogs
     max_videos_per_channel: 20
     max_comments_per_video: 500
     order: relevance             # or "time"
