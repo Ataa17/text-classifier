@@ -26,6 +26,9 @@ scraping:
     max_comments_per_video: 500
     order: relevance             # or "time"
 
+  # NOT PURSUED: Reddit disabled self-serve API app creation (2025 Responsible Builder
+  # Policy), and r/Tunisia skews English/French anyway. reddit.py is kept in case access
+  # opens up later; these settings are unused unless you obtain creds.
   reddit:
     subreddits: [Tunisia]
     listings: [hot, top, new]

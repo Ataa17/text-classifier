@@ -12,7 +12,7 @@ code-switched mix of Arabic script, Latin-script "Arabizi" (e.g. *"behi barcha"*
 
 | Step | What | Status |
 |------|------|--------|
-| 1 | Scrape 10–20k raw comments (YouTube Data API, Reddit, news sites) | scaffolded |
+| 1 | Scrape 10–20k raw comments (YouTube Data API — primary — + news sites) | scaffolded |
 | 2 | Clean: dedup, Arabic normalization, script detection (kept as a feature), keep emojis | scaffolded |
 | 3 | Hand-label ~1.5–2k; 200 double-labeled for Cohen's κ; optional LLM pre-labeling | planned |
 | 4 | Models: TF-IDF char n-grams + LogReg baseline → fine-tune DziriBERT / MARBERT / CAMeLBERT | planned |
@@ -24,11 +24,16 @@ Primary metric: **macro-F1** (not accuracy — classes are imbalanced by topic).
 
 This project scrapes public comments for **research**. We:
 
-- Use **official APIs** where available (YouTube Data API v3, Reddit API) — the cleanest legal route.
+- Use **official APIs** where available (YouTube Data API v3) — the cleanest legal route.
 - Check each site's **Terms of Service and `robots.txt`**, and **rate-limit** all requests.
 - Store **no usernames or personal information** — only comment text and non-identifying metadata
   (platform, language/script, timestamp bucket).
 - Keep raw scraped data **out of version control** (see `.gitignore`).
+
+> **Reddit not pursued.** Reddit disabled self-serve API app creation in its 2025 Responsible
+> Builder Policy rollout, and r/Tunisia skews English/French. `src/scraping/reddit.py` is kept
+> for the future but is not part of the data collection. YouTube is the primary source, with
+> news-site comments secondary.
 
 ## Setup
 
@@ -42,15 +47,15 @@ cp .env.example .env        # then fill in your API keys
 playwright install chromium
 ```
 
-Edit `config/config.yaml` to set YouTube channels (by ID, `@handle`, or URL), subreddits,
-and news sites. A starter set of Tunisian channels is pre-filled — verify and extend it.
+Edit `config/config.yaml` to set YouTube channels (by ID, `@handle`, or URL) and news sites.
+A starter set of Tunisian channels is pre-filled — verify and extend it.
 
 ## Usage
 
 ```bash
 # Step 1 — scrape (writes to data/raw/)
 python -m src.scraping.youtube
-python -m src.scraping.reddit
+# python -m src.scraping.news     # once news sites are configured
 
 # Step 2 — clean (data/raw/ -> data/processed/)
 python -m src.cleaning.clean
