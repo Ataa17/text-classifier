@@ -11,6 +11,8 @@ Usage:  python -m src.labeling.label_cli            # labels to_label_main.csv
 """
 from __future__ import annotations
 
+import os
+import re
 import sys
 from pathlib import Path
 
@@ -26,6 +28,28 @@ for _stream in (sys.stdout, sys.stdin):
         pass
 
 KEYS = {"p": "positive", "n": "negative", "d": "neutral"}
+
+# Terminals that don't apply the Unicode bidi algorithm show Arabic left-to-right and
+# disconnected. We reshape to presentation forms + reorder for display so it reads right.
+# Set LABEL_NO_RTL=1 to disable (e.g. if your terminal already does bidi and text double-flips).
+_ARABIC_RE = re.compile(r"[؀-ۿݐ-ݿࢠ-ࣿ]")
+_RTL_ENABLED = os.getenv("LABEL_NO_RTL") not in ("1", "true", "True")
+try:
+    import arabic_reshaper
+    from bidi.algorithm import get_display
+except ImportError:
+    arabic_reshaper = None
+    get_display = None
+
+
+def display_text(text: str) -> str:
+    """Make Arabic readable in a non-bidi terminal; leave non-Arabic text untouched."""
+    if not _RTL_ENABLED or get_display is None or not _ARABIC_RE.search(text):
+        return text
+    try:
+        return get_display(arabic_reshaper.reshape(text))
+    except Exception:
+        return text
 
 
 def _resolve_target(arg: str | None) -> Path:
@@ -56,7 +80,7 @@ def label(path: Path) -> None:
         row = df.loc[idx]
         print("-" * 60)
         print(f"[{done + i + 1}/{total}]  ({row['script']} | {row['source']})")
-        print(row["clean_text"])
+        print(display_text(str(row["clean_text"])))
         choice = input("> ").strip().lower()
 
         if choice == "q":

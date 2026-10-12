@@ -41,6 +41,19 @@ def test_stratified_take_reproducible():
     assert sorted(a["id"]) == sorted(b["id"])
 
 
+def test_display_text_leaves_latin_untouched():
+    from src.labeling.label_cli import display_text
+    assert display_text("behi barcha") == "behi barcha"
+
+
+def test_display_text_transforms_arabic():
+    pytest.importorskip("arabic_reshaper")
+    pytest.importorskip("bidi")
+    from src.labeling.label_cli import display_text
+    out = display_text("مرحبا")  # "marhaba"
+    assert out and out != "مرحبا"
+
+
 def test_kappa_compare(tmp_path):
     pytest.importorskip("sklearn")
     from src.labeling.kappa import compare
