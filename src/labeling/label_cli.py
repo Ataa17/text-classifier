@@ -64,14 +64,18 @@ def label(path: Path) -> None:
     if not path.exists():
         raise SystemExit(f"{path} not found. Run `python -m src.labeling.sample` first.")
 
-    df = pd.read_csv(path, dtype={"label": "string"})
+    df = pd.read_csv(path, dtype={"label": "string", "suggestion": "string"})
     df["label"] = df["label"].fillna("")
+    has_suggestions = "suggestion" in df.columns
+    if has_suggestions:
+        df["suggestion"] = df["suggestion"].fillna("")
 
     todo = df.index[df["label"] == ""].tolist()
     done = int((df["label"] != "").sum())
     total = len(df)
     print(f"\n{path.name}: {done}/{total} labeled, {len(todo)} to go.")
-    print("keys: [p]ositive  [n]egative  [d]iscard  [s]kip  [u]ndo  [q]uit\n")
+    accept = "  [Enter] accept suggestion" if has_suggestions else ""
+    print(f"keys: [p]ositive  [n]egative  [d]iscard  [s]kip  [u]ndo  [q]uit{accept}\n")
 
     history: list[int] = []
     i = 0
@@ -81,10 +85,22 @@ def label(path: Path) -> None:
         print("-" * 60)
         print(f"[{done + i + 1}/{total}]  ({row['script']} | {row['source']})")
         print(display_text(str(row["clean_text"])))
+        suggestion = str(row["suggestion"]) if has_suggestions else ""
+        if suggestion:
+            print(f"    suggestion: {suggestion}  (Enter to accept)")
         choice = input("> ").strip().lower()
 
         if choice == "q":
             break
+        if choice == "":  # accept the suggestion, if any
+            if suggestion in KEYS.values():
+                df.loc[idx, "label"] = suggestion
+                df.to_csv(path, index=False, encoding="utf-8")
+                history.append(idx)
+                i += 1
+            else:
+                print("(no suggestion to accept — use p / n / d / s)")
+            continue
         if choice == "s":
             i += 1
             continue

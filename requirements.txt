@@ -27,6 +27,9 @@ datasets>=2.18
 torch>=2.2
 accelerate>=0.28
 
+# --- LLM pre-labeling (step 3, optional) ---
+anthropic>=0.40
+
 # --- Demo (step 5) ---
 gradio>=4.0
 

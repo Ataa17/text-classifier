@@ -59,6 +59,13 @@ python -m src.scraping.youtube
 
 # Step 2 — clean (data/raw/ -> data/processed/)
 python -m src.cleaning.clean
+
+# Step 3 — labeling (binary pos/neg; neutral is discarded)
+python -m src.labeling.sample          # draw kappa (200) + main (2600) sets
+python -m src.labeling.llm_prelabel    # optional: LLM first-pass on the main set
+python -m src.labeling.label_cli kappa # hand-label the blind kappa set first
+python -m src.labeling.label_cli       # then the main set (Enter accepts a suggestion)
+python -m src.labeling.kappa a.csv b.csv   # Cohen's kappa from two annotators
 ```
 
 ## Layout

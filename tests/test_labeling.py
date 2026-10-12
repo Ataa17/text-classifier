@@ -54,6 +54,40 @@ def test_display_text_transforms_arabic():
     assert out and out != "مرحبا"
 
 
+def test_parse_labels_valid():
+    from src.labeling.llm_prelabel import _parse_labels
+    raw = '[{"i":0,"label":"positive"},{"i":1,"label":"negative"},{"i":2,"label":"neutral"}]'
+    assert _parse_labels(raw, 3) == ["positive", "negative", "neutral"]
+
+
+def test_parse_labels_tolerates_fence_and_bad_entries():
+    from src.labeling.llm_prelabel import _parse_labels
+    raw = '```json\n[{"i":0,"label":"POSITIVE"},{"i":1,"label":"banana"}]\n```'
+    # case-normalized; unknown label -> "" ; missing index 2 -> ""
+    assert _parse_labels(raw, 3) == ["positive", "", ""]
+
+
+def test_parse_labels_garbage_returns_blanks():
+    from src.labeling.llm_prelabel import _parse_labels
+    assert _parse_labels("sorry, I cannot", 2) == ["", ""]
+
+
+def test_classify_batch_with_mocked_client():
+    from unittest.mock import MagicMock
+    from src.labeling.llm_prelabel import _classify_batch
+
+    block = MagicMock(type="text", text='[{"i":0,"label":"positive"},{"i":1,"label":"neutral"}]')
+    client = MagicMock()
+    client.messages.create.return_value = MagicMock(content=[block])
+
+    out = _classify_batch(client, ["behi barcha", "lkol sa3a 8"], "claude-haiku-5-5", 1024)
+    assert out == ["positive", "neutral"]
+    # model + comments were actually passed through
+    kwargs = client.messages.create.call_args.kwargs
+    assert kwargs["model"] == "claude-haiku-5-5"
+    assert "behi barcha" in kwargs["messages"][0]["content"]
+
+
 def test_kappa_compare(tmp_path):
     pytest.importorskip("sklearn")
     from src.labeling.kappa import compare
