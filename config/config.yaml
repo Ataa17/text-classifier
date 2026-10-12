@@ -63,9 +63,9 @@ labeling:
   stratify_by_script: true
   llm:
     # LLM pre-labeling of the MAIN set only (never the kappa set — that stays blind).
-    # Humans confirm/correct every suggestion. Bump to a stronger model for better
-    # first guesses: claude-sonnet-5-5 or claude-opus-5-5.
-    model: claude-haiku-5-5
+    # Humans confirm/correct every suggestion. Uses OpenAI (ChatGPT) via OPENAI_API_KEY.
+    # gpt-4o-mini is cheap and fine for a first pass; bump to gpt-4o for better guesses.
+    model: gpt-4o-mini
     batch_size: 20          # comments per API call
     max_tokens: 1024
 

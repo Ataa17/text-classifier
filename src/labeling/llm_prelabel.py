@@ -5,8 +5,8 @@ The human then confirms or corrects every suggestion in the labeling CLI (Enter 
 
 NEVER run this on the kappa overlap set — that must be labeled blind for an honest kappa.
 
-Uses ANTHROPIC_API_KEY (from .env). Resumable: only fills rows with no suggestion yet,
-saves after every batch.
+Uses OpenAI (ChatGPT) via OPENAI_API_KEY (from .env). Resumable: only fills rows with no
+suggestion yet, saves after every batch.
 
 Run:  python -m src.labeling.llm_prelabel
 """
@@ -62,23 +62,25 @@ def _parse_labels(raw: str, n: int) -> list[str]:
 
 def _classify_batch(client, texts: list[str], model: str, max_tokens: int) -> list[str]:
     numbered = "\n".join(f"{i}. {t}" for i, t in enumerate(texts))
-    resp = client.messages.create(
+    resp = client.chat.completions.create(
         model=model,
         max_tokens=max_tokens,
-        output_config={"effort": "low"},
-        system=SYSTEM,
-        messages=[{"role": "user", "content": numbered}],
+        temperature=0,
+        messages=[
+            {"role": "system", "content": SYSTEM},
+            {"role": "user", "content": numbered},
+        ],
     )
-    text = "".join(b.text for b in resp.content if b.type == "text")
+    text = resp.choices[0].message.content or ""
     return _parse_labels(text, len(texts))
 
 
 def prelabel(path: Path = OUT_MAIN) -> None:
     if not path.exists():
         raise SystemExit(f"{path} not found. Run `python -m src.labeling.sample` first.")
-    env("ANTHROPIC_API_KEY", required=True)  # fail early with a clear message
+    env("OPENAI_API_KEY", required=True)  # fail early with a clear message
 
-    import anthropic  # imported here so the rest of the project doesn't require the SDK
+    from openai import OpenAI  # imported here so the rest of the project doesn't require the SDK
 
     lc = settings()["labeling"]["llm"]
     df = pd.read_csv(path, dtype={"suggestion": "string"})
@@ -92,7 +94,7 @@ def prelabel(path: Path = OUT_MAIN) -> None:
         return
     print(f"Pre-labeling {len(todo)} comments with {lc['model']} ...")
 
-    client = anthropic.Anthropic()
+    client = OpenAI()
     bs = lc["batch_size"]
     for start in tqdm(range(0, len(todo), bs)):
         idxs = todo[start:start + bs]

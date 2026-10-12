@@ -76,16 +76,17 @@ def test_classify_batch_with_mocked_client():
     from unittest.mock import MagicMock
     from src.labeling.llm_prelabel import _classify_batch
 
-    block = MagicMock(type="text", text='[{"i":0,"label":"positive"},{"i":1,"label":"neutral"}]')
+    message = MagicMock(content='[{"i":0,"label":"positive"},{"i":1,"label":"neutral"}]')
     client = MagicMock()
-    client.messages.create.return_value = MagicMock(content=[block])
+    client.chat.completions.create.return_value = MagicMock(choices=[MagicMock(message=message)])
 
-    out = _classify_batch(client, ["behi barcha", "lkol sa3a 8"], "claude-haiku-5-5", 1024)
+    out = _classify_batch(client, ["behi barcha", "lkol sa3a 8"], "gpt-4o-mini", 1024)
     assert out == ["positive", "neutral"]
     # model + comments were actually passed through
-    kwargs = client.messages.create.call_args.kwargs
-    assert kwargs["model"] == "claude-haiku-5-5"
-    assert "behi barcha" in kwargs["messages"][0]["content"]
+    kwargs = client.chat.completions.create.call_args.kwargs
+    assert kwargs["model"] == "gpt-4o-mini"
+    assert kwargs["messages"][0]["role"] == "system"
+    assert "behi barcha" in kwargs["messages"][1]["content"]
 
 
 def test_kappa_compare(tmp_path):
