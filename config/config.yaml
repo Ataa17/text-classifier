@@ -22,6 +22,13 @@ scraping:
       - "@Flayou"                # comedy sketches
       - "@AhmedManai"            # football parodies / animation
       - "@KoulTime"              # food reviews / vlogs
+      - "@JelyFishTN"           # food reviews / vlogs
+      - "@traveleriste"
+      - "@zanouni_reactions"
+      - "@Matchtn"
+      - "@MosaiqueFm"
+      - "@SHEMSFMTN"
+      - "@JawharaFM"
     max_videos_per_channel: 20
     max_comments_per_video: 500
     order: relevance             # or "time"
@@ -47,6 +54,13 @@ cleaning:
   max_repeat_run: 2
   keep_emojis: true
   dedup: true
+
+labeling:
+  # Extra headroom above the ~2000 target, since neutral comments get discarded during
+  # labeling (they are not a class). Stratified by detected script so Arabic isn't swamped.
+  sample_size: 2600
+  kappa_overlap: 200       # double-labeled (blind) by two annotators for Cohen's kappa
+  stratify_by_script: true
 
 split:
   test_size: 0.2
