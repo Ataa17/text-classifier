@@ -1,0 +1,44 @@
+# Non-secret project configuration. Secrets live in .env.
+
+project:
+  task: binary          # pos/neg. Neutral/factual comments are discarded, not bucketed.
+  labels: [negative, positive]
+  seed: 42
+
+scraping:
+  target_raw_comments: 15000     # aim 10k-20k
+  min_chars: 10                  # drop very short comments
+  max_chars: 1000
+  request_sleep_seconds: 0.5     # be polite; rate-limit all requests
+
+  youtube:
+    # Add Tunisian channel IDs (football / news / music / comedy).
+    # Channel IDs start with "UC...". Find via a channel's page source or the API.
+    channel_ids: []
+    max_videos_per_channel: 20
+    max_comments_per_video: 500
+    order: relevance             # or "time"
+
+  reddit:
+    subreddits: [Tunisia]
+    listings: [hot, top, new]
+    posts_per_listing: 100
+    top_time_filter: year
+
+  news:
+    # {name, url, article_selector, comment_selector, requires_js}
+    sites: []
+
+cleaning:
+  strip_diacritics: true
+  strip_tatweel: true
+  normalize_letters: true        # unify alef/ya/ta-marbuta variants
+  collapse_repeats: true         # "barchaaaa" -> "barchaa" (cap run length)
+  max_repeat_run: 2
+  keep_emojis: true
+  dedup: true
+
+split:
+  test_size: 0.2
+  val_size: 0.1
+  stratify: true
