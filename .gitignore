@@ -11,11 +11,13 @@ data/processed/*
 data/labeled/*
 !data/**/.gitkeep
 
-# Models / checkpoints
+# Models / checkpoints / reports (derived from gitignored data)
 models/checkpoints/
 *.pt
 *.bin
 *.safetensors
+*.joblib
+reports/
 
 # Python
 __pycache__/

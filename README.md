@@ -66,6 +66,9 @@ python -m src.labeling.llm_prelabel    # optional: LLM first-pass on the main se
 python -m src.labeling.label_cli kappa # hand-label the blind kappa set first
 python -m src.labeling.label_cli       # then the main set (Enter accepts a suggestion)
 python -m src.labeling.kappa a.csv b.csv   # Cohen's kappa from two annotators
+
+# Step 4 — baseline model (TF-IDF char n-grams + LogReg)
+python -m src.models.baseline          # trains, reports macro-F1 + by-script, saves model
 ```
 
 ## Layout
