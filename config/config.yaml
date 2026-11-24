@@ -73,3 +73,12 @@ split:
   test_size: 0.2
   val_size: 0.1
   stratify: true
+
+transformer:
+  # Dialect-aware encoders to fine-tune and compare against the baseline.
+  models: [dziribert, marbert, camelbert-da]
+  test_size: 0.2
+  epochs: 4
+  batch_size: 16
+  learning_rate: 2.0e-5
+  max_length: 128

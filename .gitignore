@@ -27,6 +27,7 @@ __pycache__/
 build/
 dist/
 .venv/
+.venv312/
 venv/
 env/
 .ipynb_checkpoints/
