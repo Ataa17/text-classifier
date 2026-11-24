@@ -12,13 +12,36 @@ code-switched mix of Arabic script, Latin-script "Arabizi" (e.g. *"behi barcha"*
 
 | Step | What | Status |
 |------|------|--------|
-| 1 | Scrape 10–20k raw comments (YouTube Data API — primary — + news sites) | scaffolded |
-| 2 | Clean: dedup, Arabic normalization, script detection (kept as a feature), keep emojis | scaffolded |
-| 3 | Hand-label ~1.5–2k; 200 double-labeled for Cohen's κ; optional LLM pre-labeling | planned |
-| 4 | Models: TF-IDF char n-grams + LogReg baseline → fine-tune DziriBERT / MARBERT / CAMeLBERT | planned |
-| 5 | Error analysis (by phenomenon + by script), Gradio demo, write-up | planned |
+| 1 | Scrape comments through the YouTube Data API; optional news and Reddit scrapers | YouTube working |
+| 2 | Deduplication, normalization, script detection, and emoji-preserving cleaning | working |
+| 3 | Hand-label positive/negative/neutral samples and LLM pre-labeling support | data labeled; kappa validation pending |
+| 4 | TF-IDF baseline and CUDA transformer fine-tuning | working |
+| 5 | Streamlit model demo | working |
+| 6 | Error analysis and transformer comparison | partial |
 
 Primary metric: **macro-F1** (not accuracy — classes are imbalanced by topic). Stratified split, fixed seeds.
+
+## Verified results
+
+The existing labeled YouTube data contains 1,948 confirmed positive/negative rows.
+The held-out test split contains 390 rows.
+
+| Model | Held-out macro-F1 |
+|------|------------------:|
+| TF-IDF character n-grams + Logistic Regression | 0.7727 |
+| TunBERT (`tunis-ai/TunBERT`) | 0.4353 |
+| DziriBERT (`alger-ia/dziribert`) | 0.8353 |
+
+DziriBERT has the strongest measured macro-F1 so far. TF-IDF remains a strong baseline and
+TunBERT did not generalize well to this held-out dataset.
+
+Per-script DziriBERT macro-F1:
+
+| Script | Samples | Macro-F1 |
+|--------|--------:|---------:|
+| Arabic | 138 | 0.8547 |
+| Latin | 244 | 0.8097 |
+| Mixed | 8 | 1.0000 |
 
 ## Data collection ethics
 
@@ -47,6 +70,22 @@ cp .env.example .env        # then fill in your API keys
 playwright install chromium
 ```
 
+For CUDA-enabled transformer training on Windows, Python 3.12 is also supported by a
+separate virtual environment:
+
+```powershell
+py -3.12 -m venv .venv312
+.\.venv312\Scripts\Activate.ps1
+pip install -r requirements.txt
+
+# Example CUDA 12.8 build
+pip install --index-url https://download.pytorch.org/whl/cu128 torch torchvision torchaudio
+pip install "transformers>=4.40,<5" "datasets>=2.18,<4"
+```
+
+The transformer runner verifies CUDA availability and fails clearly if a GPU is unavailable.
+It can be used with an NVIDIA GPU; the TF-IDF baseline itself runs on CPU.
+
 Edit `config/config.yaml` to set YouTube channels (by ID, `@handle`, or URL) and news sites.
 A starter set of Tunisian channels is pre-filled — verify and extend it.
 
@@ -70,8 +109,17 @@ python -m src.labeling.kappa a.csv b.csv   # Cohen's kappa from two annotators
 # Step 4 — baseline model (TF-IDF char n-grams + LogReg)
 python -m src.models.baseline          # trains, reports macro-F1 + by-script, saves model
 
+# Fine-tune transformer models with CUDA
+python -m src.models.transformer tunbert
+python -m src.models.transformer dziribert
+# Or train every configured transformer:
+python -m src.models.transformer
+
 # Step 5 — Streamlit prediction interface
-streamlit run app/streamlit_app.py
+.venv312\Scripts\python.exe -m streamlit run app/streamlit_app.py
+
+# Tests
+python -m pytest -q
 ```
 
 ## Layout
@@ -86,7 +134,11 @@ src/
   labeling/        llm_prelabel.py
   models/          baseline.py, transformer.py
   evaluation/      metrics.py
-app/               gradio_app.py (demo)
+app/
+  gradio_app.py     legacy Gradio demo
+  streamlit_app.py  model-selection prediction interface
+models/             baseline and fine-tuned model artifacts (gitignored)
+reports/            metrics and evaluation reports (gitignored)
 tests/
 ```
 
