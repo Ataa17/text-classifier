@@ -69,6 +69,9 @@ python -m src.labeling.kappa a.csv b.csv   # Cohen's kappa from two annotators
 
 # Step 4 — baseline model (TF-IDF char n-grams + LogReg)
 python -m src.models.baseline          # trains, reports macro-F1 + by-script, saves model
+
+# Step 5 — Streamlit prediction interface
+streamlit run app/streamlit_app.py
 ```
 
 ## Layout

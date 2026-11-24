@@ -76,9 +76,10 @@ split:
 
 transformer:
   # Dialect-aware encoders to fine-tune and compare against the baseline.
-  models: [dziribert, marbert, camelbert-da]
+  models: [tunbert, dziribert, marbert, camelbert-da]
   test_size: 0.2
   epochs: 4
-  batch_size: 16
+  batch_size: 4
+  gradient_accumulation_steps: 4
   learning_rate: 2.0e-5
   max_length: 128

@@ -21,7 +21,8 @@ from ..config import ROOT, settings
 from .data import CLASSES, load_labeled
 
 MODELS = {
-    "dziribert": "alioui/dziribert",
+    "tunbert": "tunis-ai/TunBERT",
+    "dziribert": "alger-ia/dziribert",
     "marbert": "UBC-NLP/MARBERT",
     "camelbert-da": "CAMeL-Lab/bert-base-arabic-camelbert-da",
 }
@@ -53,6 +54,8 @@ def compute_metrics(eval_pred):
     from sklearn.metrics import accuracy_score, f1_score
 
     logits, labels = eval_pred
+    if isinstance(logits, (tuple, list)):
+        logits = logits[0]
     preds = np.asarray(logits).argmax(axis=-1)
     return {
         "accuracy": accuracy_score(labels, preds),
@@ -62,6 +65,7 @@ def compute_metrics(eval_pred):
 
 def finetune(model_key: str, df=None, epochs: int | None = None) -> dict:
     import numpy as np
+    import torch
     from datasets import Dataset
     from transformers import (
         AutoModelForSequenceClassification,
@@ -76,9 +80,14 @@ def finetune(model_key: str, df=None, epochs: int | None = None) -> dict:
         raise SystemExit(f"Unknown model '{model_key}'. Choose from: {', '.join(MODELS)}")
     tc = settings()["transformer"]
     hf_name = MODELS[model_key]
+    trust_remote_code = model_key == "tunbert"
+
+    if not torch.cuda.is_available():
+        raise RuntimeError("CUDA is required for transformer fine-tuning.")
+    print(f"Using CUDA: {torch.cuda.get_device_name(0)}")
 
     train_df, test_df = prepare_splits(df)
-    tok = AutoTokenizer.from_pretrained(hf_name)
+    tok = AutoTokenizer.from_pretrained(hf_name, trust_remote_code=trust_remote_code)
 
     def to_ds(frame):
         ds = Dataset.from_dict({
@@ -92,8 +101,13 @@ def finetune(model_key: str, df=None, epochs: int | None = None) -> dict:
 
     train_ds, test_ds = to_ds(train_df), to_ds(test_df)
     model = AutoModelForSequenceClassification.from_pretrained(
-        hf_name, num_labels=len(CLASSES), id2label=ID2LABEL, label2id=LABEL2ID,
+        hf_name,
+        num_labels=len(CLASSES),
+        id2label=ID2LABEL,
+        label2id=LABEL2ID,
+        trust_remote_code=trust_remote_code,
     )
+    model.to("cuda")
 
     out_dir = OUT_ROOT / model_key
     args = TrainingArguments(
@@ -101,7 +115,9 @@ def finetune(model_key: str, df=None, epochs: int | None = None) -> dict:
         num_train_epochs=epochs or tc["epochs"],
         per_device_train_batch_size=tc["batch_size"],
         per_device_eval_batch_size=tc["batch_size"],
+        gradient_accumulation_steps=tc.get("gradient_accumulation_steps", 1),
         learning_rate=float(tc["learning_rate"]),
+        fp16=torch.cuda.is_available(),
         save_strategy="no",
         logging_steps=50,
         report_to=[],
@@ -109,11 +125,14 @@ def finetune(model_key: str, df=None, epochs: int | None = None) -> dict:
     trainer = Trainer(
         model=model, args=args,
         train_dataset=train_ds, eval_dataset=test_ds,
-        compute_metrics=compute_metrics, tokenizer=tok,
+        compute_metrics=compute_metrics, processing_class=tok,
     )
     trainer.train()
 
-    pred_ids = np.asarray(trainer.predict(test_ds).predictions).argmax(axis=-1)
+    predictions = trainer.predict(test_ds).predictions
+    if isinstance(predictions, (tuple, list)):
+        predictions = predictions[0]
+    pred_ids = np.asarray(predictions).argmax(axis=-1)
     preds = [ID2LABEL[i] for i in pred_ids]
 
     metrics = {

@@ -32,6 +32,7 @@ openai>=1.40
 
 # --- Demo (step 5) ---
 gradio>=4.0
+streamlit>=1.32
 
 # --- Dev ---
 pytest>=8.0
